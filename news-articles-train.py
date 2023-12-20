@@ -6,12 +6,9 @@ Created on Mon Dec 11 14:55:47 2023
 @author: Stephen Mooney
 """
 
-"""
-Note: this is a work in progress - use at your own risk.
-"""
-
 #
 # import necessary libraries
+from collections import defaultdict
 import numpy as np
 import pandas as pd
 import pickle
@@ -25,7 +22,7 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 """
 def make_dataset(X, y, batch_size=2**6):
   dataset = tf.data.Dataset.from_tensor_slices((X, y))
-  dataset = dataset.shuffle(2048).batch(batch_size).prefetch(buffer_size=25000)
+  dataset = dataset.shuffle(2048).batch(batch_size).prefetch(buffer_size=2048)
   return dataset
 
 """
@@ -37,7 +34,7 @@ lstm_size = 100
 
 batch_size = 2**4
 epochs = 150
-learning_rate = 0.003
+learning_rate = 0.001
 
 #
 # Gather input training data
@@ -85,20 +82,29 @@ model = tf.keras.Sequential([
     tf.keras.layers.Dense(total_words, activation='softmax')
 ])
 
-#optimizer='adam'
 optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=learning_rate)
 loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits = False)
 
 model.compile(loss=loss_fn, optimizer=optimizer, metrics=['sparse_categorical_accuracy'])
 model.summary()
 
+cb_early_stopping = tf.keras.callbacks.EarlyStopping(
+  monitor='loss',
+  patience = 5,
+  restore_best_weights=True)
+
 # train the genrative model
 with tf.device('/device:GPU:0'):
   history = model.fit(train_ds,
                       epochs=epochs,
+                      callbacks=[cb_early_stopping],
                       verbose=1)
 
-model.save('model-output/trained_model.keras')
+# save model and tokenizer for inference
+model_dict = defaultdict()
+model_dict['model'] = model
+model_dict['tokenizer'] = tokenizer
+model_dict['sequence_length'] = sequence_length
 
-with open('model-output/tokenizer.pkl', 'wb') as handle:
-  pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+with open('model-output/model_dict.pkl', 'wb') as handle:
+  pickle.dump(model_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
