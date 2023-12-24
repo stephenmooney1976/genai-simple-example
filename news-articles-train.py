@@ -68,10 +68,7 @@ padded_sequences = pad_sequences(input_sequences, maxlen=sequence_length, paddin
 X = np.array(padded_sequences[:, :-1])
 y = np.array(padded_sequences[:, -1])
 
-train_X, val_X, train_y, val_y = train_test_split(X, y, test_size=0.1, random_state=42)
-
-train_ds = make_dataset(train_X, train_y, batch_size=batch_size)
-val_ds = make_dataset(val_X, val_y, batch_size=batch_size)
+ds_train = make_dataset(X, y, batch_size=batch_size)
 
 #
 # choose a generative architecture. for this I am setting up an RNN with an LSTM layer, with a output layer using softmax
@@ -95,10 +92,11 @@ cb_early_stopping = tf.keras.callbacks.EarlyStopping(
 
 # train the genrative model
 with tf.device('/device:GPU:0'):
-  history = model.fit(train_ds,
+  history = model.fit(ds_train,
                       epochs=epochs,
                       callbacks=[cb_early_stopping],
                       verbose=1)
+
 
 # save model and tokenizer for inference
 model_dict = defaultdict()
