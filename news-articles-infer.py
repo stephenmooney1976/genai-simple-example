@@ -23,13 +23,12 @@ sequence_length = model_dict['sequence_length']
 
 model.summary()
 
-seed_text = 'thai economy'
+input_text = 'thai economy'
 
 for _ in range(sequence_length):
-  token_list = tokenizer.texts_to_sequences([seed_text])[0]
+  token_list = tokenizer.texts_to_sequences([input_text])[0]
   token_list = pad_sequences([token_list], maxlen=sequence_length-1, padding='pre')
   predicted = np.argmax(model.predict(token_list))
-  zzz = model.predict(token_list)
 
   output_word = ''
 
@@ -38,6 +37,6 @@ for _ in range(sequence_length):
       output_word = word
       break
 
-  seed_text += " " + output_word
+  input_text += " " + output_word
 
-print(seed_text)
+print(input_text)

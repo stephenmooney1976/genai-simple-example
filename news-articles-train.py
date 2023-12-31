@@ -22,7 +22,12 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 """
 def make_dataset(X, y, batch_size=2**6):
   dataset = tf.data.Dataset.from_tensor_slices((X, y))
-  dataset = dataset.shuffle(2048).batch(batch_size).prefetch(buffer_size=2048)
+  dataset = (
+    dataset
+      .shuffle(2048)
+      .batch(batch_size)
+      .prefetch(buffer_size=2048)
+  )
   return dataset
 
 """
@@ -34,7 +39,7 @@ lstm_size = 100
 
 batch_size = 2**4
 epochs = 150
-learning_rate = 0.001
+learning_rate = 1e-3
 
 #
 # Gather input training data
@@ -44,7 +49,7 @@ learning_rate = 0.001
 input_filename = 'data/abcnews-date-text-small.csv.gz'
 df_input = pd.read_csv(input_filename)
 
-# remove rows that have the same headline that is a substring of entire title
+# remove rows that have the same headline
 arr_input_data = df_input['headline_text'].drop_duplicates().tolist()
 
 # Tokenize the text
@@ -68,6 +73,7 @@ padded_sequences = pad_sequences(input_sequences, maxlen=sequence_length, paddin
 X = np.array(padded_sequences[:, :-1])
 y = np.array(padded_sequences[:, -1])
 
+# create a tensorflow dataset for model training
 ds_train = make_dataset(X, y, batch_size=batch_size)
 
 #
@@ -88,7 +94,7 @@ model.summary()
 cb_early_stopping = tf.keras.callbacks.EarlyStopping(
   monitor='loss',
   patience = 5,
-  restore_best_weights=True)
+  )
 
 # train the genrative model
 with tf.device('/device:GPU:0'):
